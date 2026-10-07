@@ -55,6 +55,4 @@ dependencies {
     implementation("androidx.core:core-ktx:1.15.0")
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("com.google.android.material:material:1.12.0")
-    implementation("com.google.android.gms:play-services-ads:25.5.0")
-    implementation("com.google.android.ump:user-messaging-platform:4.0.0")
 }
