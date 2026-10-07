@@ -22,11 +22,11 @@ class LibraryActivity : AppCompatActivity() {
     private fun render() {
         root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(20, 22, 20, 24)
+            setPadding(Ui.dp(this@LibraryActivity,20),Ui.dp(this@LibraryActivity,22),Ui.dp(this@LibraryActivity,20),Ui.dp(this@LibraryActivity,24))
             setBackgroundColor(Color.parseColor(Ui.BG))
         }
         val scroll = ScrollView(this).apply { isFillViewport = true }
-        scroll.addView(root); setContentView(scroll)
+        scroll.addView(root); Ui.applyContentWidth(root,this); setContentView(scroll)
 
         root.addView(TextView(this).apply {
             text = "БИБЛИОТЕКА"; Ui.text(this, 28); setTypeface(typeface, Typeface.BOLD)
@@ -59,7 +59,7 @@ class LibraryActivity : AppCompatActivity() {
             root.addView(TextView(this).apply {
                 text = "Пока пусто.\n\nЗакончи испытание — и текст появится здесь."
                 gravity = Gravity.CENTER; Ui.text(this, 15, Ui.MUTED)
-                setPadding(20, 65, 20, 65)
+                setPadding(Ui.dp(this@LibraryActivity,20),Ui.dp(this@LibraryActivity,65),Ui.dp(this@LibraryActivity,20),Ui.dp(this@LibraryActivity,65))
             }, lp(190))
         } else list.forEach { card(it) }
     }
@@ -67,7 +67,7 @@ class LibraryActivity : AppCompatActivity() {
     private fun card(d: Draft) {
         val c = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL; background = Ui.bg(Ui.CARD, 20f)
-            setPadding(17, 14, 17, 14); setOnClickListener { open(d) }
+            setPadding(Ui.dp(this@LibraryActivity,17),Ui.dp(this@LibraryActivity,14),Ui.dp(this@LibraryActivity,17),Ui.dp(this@LibraryActivity,14)); setOnClickListener { open(d) }
         }
         c.addView(TextView(this).apply {
             text = d.title; Ui.text(this, 18); setTypeface(typeface, Typeface.BOLD)
@@ -148,5 +148,5 @@ class LibraryActivity : AppCompatActivity() {
     }
 
     private fun date(ms: Long) = java.text.SimpleDateFormat("dd.MM.yyyy  HH:mm", Locale.getDefault()).format(Date(ms))
-    private fun lp(h: Int) = LinearLayout.LayoutParams(-1, h)
+    private fun lp(h: Int) = Ui.spaced(this,h,5,5)
 }
