@@ -15,7 +15,7 @@ class MiniGamesActivity:AppCompatActivity(){
  override fun onCreate(b:Bundle?){super.onCreate(b);menu()}
  private fun base(title:String,sub:String){
   root=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(Ui.dp(this@MiniGamesActivity,18),Ui.dp(this@MiniGamesActivity,20),Ui.dp(this@MiniGamesActivity,18),Ui.dp(this@MiniGamesActivity,28));setBackgroundColor(Color.parseColor(Ui.BG))}
-  val sc=ScrollView(this).apply{isFillViewport=true};sc.addView(root);setContentView(sc)
+  val sc=ScrollView(this).apply{isFillViewport=true};sc.addView(root);Ui.applyContentWidth(root,this);setContentView(sc)
   root.addView(TextView(this).apply{text=title;Ui.text(this,27);setTypeface(typeface,Typeface.BOLD)},LinearLayout.LayoutParams(-1,Ui.dp(this@MiniGamesActivity,44)))
   root.addView(TextView(this).apply{text=sub;Ui.text(this,13,Ui.MUTED);setMinLines(2);setPadding(0,0,0,Ui.dp(context,18))})
  }
@@ -36,7 +36,7 @@ class MiniGamesActivity:AppCompatActivity(){
  }
  private fun chain(){
   base("ЦЕПОЧКА","Каждый ход — новая ассоциация. Нельзя повторять предыдущее слово.")
-  val word=TextView(this).apply{gravity=Gravity.CENTER;Ui.text(this,30,Ui.GOLD);background=Ui.bg(Ui.CARD,20f);setPadding(8,25,8,25)}
+  val word=TextView(this).apply{gravity=Gravity.CENTER;Ui.text(this,30,Ui.GOLD);background=Ui.bg(Ui.CARD,20f);setPadding(Ui.dp(this@MiniGamesActivity,8),Ui.dp(this@MiniGamesActivity,25),Ui.dp(this@MiniGamesActivity,8),Ui.dp(this@MiniGamesActivity,25))}
   val input=EditText(this).apply{hint="Твоя ассоциация";textSize=20f}
   val info=TextView(this).apply{gravity=Gravity.CENTER;Ui.text(this,14,Ui.MUTED)}
   root.addView(word,LinearLayout.LayoutParams(-1,Ui.dp(this@MiniGamesActivity,100)));root.addView(input,LinearLayout.LayoutParams(-1,Ui.dp(this@MiniGamesActivity,70)));root.addView(info,LinearLayout.LayoutParams(-1,Ui.dp(this@MiniGamesActivity,55)))
@@ -51,7 +51,7 @@ class MiniGamesActivity:AppCompatActivity(){
  private fun forbidden(){
   base("ЗАПРЕТНОЕ СЛОВО","Одно слово вычёркивается из твоего словаря. Напиши сцену и проверь себя.")
   val forbidden=bank.random()
-  root.addView(TextView(this).apply{text="НЕ ГОВОРИ:  "+forbidden;gravity=Gravity.CENTER;Ui.text(this,20,Ui.RED);background=Ui.bg("#2A1D22",18f);setPadding(10,18,10,18)},LinearLayout.LayoutParams(-1,Ui.dp(this@MiniGamesActivity,70)))
+  root.addView(TextView(this).apply{text="НЕ ГОВОРИ:  "+forbidden;gravity=Gravity.CENTER;Ui.text(this,20,Ui.RED);background=Ui.bg("#2A1D22",18f);setPadding(Ui.dp(this@MiniGamesActivity,10),Ui.dp(this@MiniGamesActivity,18),Ui.dp(this@MiniGamesActivity,10),Ui.dp(this@MiniGamesActivity,18))},LinearLayout.LayoutParams(-1,Ui.dp(this@MiniGamesActivity,70)))
   val e=EditText(this).apply{hint="Сцена начинается здесь…";gravity=Gravity.TOP;minLines=10;textSize=18f}
   val info=TextView(this).apply{gravity=Gravity.CENTER;Ui.text(this,14,Ui.MUTED)}
   root.addView(e,LinearLayout.LayoutParams(-1,Ui.dp(this@MiniGamesActivity,280)));root.addView(info,LinearLayout.LayoutParams(-1,Ui.dp(this@MiniGamesActivity,45)))
@@ -61,7 +61,7 @@ class MiniGamesActivity:AppCompatActivity(){
  private fun memory(){
   base("СЛОВОЗАСЕЧКА","30 секунд на запоминание. После этого подсказка исчезнет.")
   val set=bank.shuffled(Random(System.currentTimeMillis())).take(7)
-  val box=TextView(this).apply{text=set.joinToString("  •  ");gravity=Gravity.CENTER;Ui.text(this,19,Ui.GOLD);background=Ui.bg(Ui.CARD,20f);setPadding(12,24,12,24)}
+  val box=TextView(this).apply{text=set.joinToString("  •  ");gravity=Gravity.CENTER;Ui.text(this,19,Ui.GOLD);background=Ui.bg(Ui.CARD,20f);setPadding(Ui.dp(this@MiniGamesActivity,12),Ui.dp(this@MiniGamesActivity,24),Ui.dp(this@MiniGamesActivity,12),Ui.dp(this@MiniGamesActivity,24))}
   val answer=EditText(this).apply{hint="Слова через пробел или запятую";minLines=3}
   val info=TextView(this).apply{gravity=Gravity.CENTER;Ui.text(this,14,Ui.MUTED)}
   root.addView(box,LinearLayout.LayoutParams(-1,Ui.dp(this@MiniGamesActivity,110)));root.addView(info,LinearLayout.LayoutParams(-1,Ui.dp(this@MiniGamesActivity,55)));root.addView(answer,LinearLayout.LayoutParams(-1,Ui.dp(this@MiniGamesActivity,100)))
