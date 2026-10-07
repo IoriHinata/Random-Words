@@ -29,7 +29,7 @@ class ChallengeActivity:AppCompatActivity(){
  private var lastSentenceWord=""
  private var currentGenre:Genre?=null
 
- override fun onCreate(b:Bundle?){super.onCreate(b);setup()}
+ override fun onCreate(b:Bundle?){super.onCreate(b);setup();if(intent.getBooleanExtra("daily",false)){root.post{config=ChallengeConfig(3,GoalType.WORDS,100,5,false,false,true,false,true,false,true,ChallengeMode.STANDARD);startChallenge()}}else if(intent.getBooleanExtra("boss",false)){root.post{config=ChallengeConfig(5,GoalType.WORDS,200,4,false,false,true,false,false,false,true,ChallengeMode.BOSS);startChallenge()}}}
 
  private fun setup(){
   root=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(Ui.dp(this@ChallengeActivity,18),Ui.dp(this@ChallengeActivity,18),Ui.dp(this@ChallengeActivity,18),Ui.dp(this@ChallengeActivity,24));setBackgroundColor(Color.parseColor(Ui.BG))}
@@ -83,7 +83,7 @@ class ChallengeActivity:AppCompatActivity(){
 
  private fun startChallenge(){
   root.removeAllViews();seconds=0;shield=false;blindHidden=false;lastSentenceWord=""
-  val seed=if(config.daily)dateSeed() else System.currentTimeMillis().toInt()
+  val seed=when{config.daily->dateSeed();config.mode==ChallengeMode.BOSS->dateSeed()/7;else->System.currentTimeMillis().toInt()}
   val rnd=Random(seed)
   currentGenre=when(config.mode){ChallengeMode.GENRE,ChallengeMode.RARE_GENRE,ChallengeMode.HYBRID->GenreBank.random(config.mode,seed);else->null}
   val bank=Store.words(this)
