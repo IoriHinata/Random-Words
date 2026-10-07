@@ -14,8 +14,13 @@ object Store {
     private fun p(c:Context)=c.getSharedPreferences(PREF,0)
 
     fun words(c:Context):MutableList<String>{
-        val raw=p(c).getString(WORDS,null)?:return WordBank.defaults().toMutableList()
-        return try { val a=JSONArray(raw); MutableList(a.length()){a.getString(it)} } catch(_:Exception){WordBank.defaults().toMutableList()}
+        val raw=p(c).getString(WORDS,null)
+        if(raw==null)return WordBank.defaults().toMutableList()
+        return try {
+            val a=JSONArray(raw)
+            val saved=MutableList(a.length()){a.getString(it)}
+            if(saved.size<1000)(saved+WordBank.defaults()).distinct().toMutableList() else saved
+        } catch(_:Exception){WordBank.defaults().toMutableList()}
     }
     fun saveWords(c:Context,list:List<String>){val a=JSONArray();list.map{it.trim().lowercase()}.filter{it.isNotBlank()}.distinct().forEach{a.put(it)};p(c).edit().putString(WORDS,a.toString()).apply()}
     fun folders(c:Context):MutableList<String>{val raw=p(c).getString(FOLDERS,null)?:return mutableListOf("Без папки");val a=JSONArray(raw);return MutableList(a.length()){a.getString(it)}}
