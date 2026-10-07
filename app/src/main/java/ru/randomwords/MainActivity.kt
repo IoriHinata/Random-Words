@@ -44,13 +44,11 @@ class MainActivity:AppCompatActivity(){
   if(!::root.isInitialized || root.findViewWithTag<AdView>("main_banner")!=null)return
   val adView=AdView(this).apply{
    tag="main_banner"
-   adUnitId=Ads.TEST_BANNER_ID
+   adUnitId=TEST_BANNER_ID_FOR_RUNTIME
    val widthDp=(resources.displayMetrics.widthPixels/resources.displayMetrics.density).toInt()
    setAdSize(AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(this@MainActivity,widthDp))
   }
-  root.addView(adView,LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.WRAP_CONTENT).apply{
-   topMargin=Ui.dp(this@MainActivity,12);bottomMargin=Ui.dp(this@MainActivity,8)
-  })
+  root.addView(adView,LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.WRAP_CONTENT).apply{topMargin=Ui.dp(this@MainActivity,12);bottomMargin=Ui.dp(this@MainActivity,8)})
   adView.loadAd(AdRequest.Builder().build())
  }
  private fun actionCard(icon:String,title:String,sub:String,accent:String,click:()->Unit){
@@ -70,4 +68,5 @@ class MainActivity:AppCompatActivity(){
   val n=Store.bookWords(this);val pct=(n/1000).coerceAtMost(100)
   AlertDialog.Builder(this).setTitle("МОЯ КНИГА").setMessage("Накоплено: $n / 100 000 слов\nПрогресс: $pct%\n\nКаждый завершённый текст добавляет слова в общий объём. На 1 000 / 10 000 / 50 000 / 100 000 слов открываются достижения.").setPositiveButton("Продолжить",null).show()
  }
+ companion object { const val TEST_BANNER_ID_FOR_RUNTIME = "ca-app-pub-3940256099942544/9214589741" }
 }
