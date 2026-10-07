@@ -11,7 +11,7 @@ import androidx.appcompat.app.AppCompatActivity
 
 class MainActivity:AppCompatActivity(){
  private lateinit var root:LinearLayout
- override fun onCreate(b:Bundle?){super.onCreate(b);render()}
+ override fun onCreate(b:Bundle?){super.onCreate(b);Store.ensureDailyBailout(this);render()}
  override fun onResume(){super.onResume();if(::root.isInitialized)render()}
  private fun render(){
   root=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(Ui.dp(this@MainActivity,20),Ui.dp(this@MainActivity,24),Ui.dp(this@MainActivity,20),Ui.dp(this@MainActivity,28));setBackgroundColor(Color.parseColor(Ui.BG))}
@@ -26,8 +26,8 @@ class MainActivity:AppCompatActivity(){
   hero.addView(TextView(this).apply{text="Книга: ${Store.bookWords(this@MainActivity)} слов   •   Сезон: день ${Store.seasonDay(this@MainActivity)}/30   •   Рекорд: ${Store.best(this@MainActivity)}";Ui.text(this,11,Ui.MUTED);setPadding(0,Ui.dp(context,8),0,0)})
   root.addView(hero,Ui.spaced(this,112,8,8))
   actionCard("✦","НОВОЕ ИСПЫТАНИЕ","Основное испытание всегда бесплатно",Ui.GOLD){startActivity(Intent(this,ChallengeActivity::class.java))}
-  actionCard("☼","ЕЖЕДНЕВНЫЙ ВЫЗОВ","Один детерминированный вызов на сегодня",Ui.BLUE){startActivity(Intent(this,ChallengeActivity::class.java).putExtra("daily",true))}
-  actionCard("👁","БОСС НЕДЕЛИ","Сложный режим с особой наградой",Ui.RED){startActivity(Intent(this,ChallengeActivity::class.java).putExtra("boss",true))}
+  actionCard("☼","ЕЖЕДНЕВНЫЙ ВЫЗОВ","Платный событийный режим • цена растёт с уровнем",Ui.BLUE){startActivity(Intent(this,ChallengeActivity::class.java).putExtra("daily",true))}
+  actionCard("👁","БОСС НЕДЕЛИ","Тысячи чернил за вход • огромная награда",Ui.RED){startActivity(Intent(this,ChallengeActivity::class.java).putExtra("boss",true))}
   actionCard("♟","МИНИ-ИГРЫ","Память, ассоциации и скорость",Ui.GREEN){startActivity(Intent(this,MiniGamesActivity::class.java))}
   actionCard("▤","БИБЛИОТЕКА","Тексты, заметки, папки и экспорт",Ui.TEXT){startActivity(Intent(this,LibraryActivity::class.java))}
   actionCard("◆","ДОСТИЖЕНИЯ","${Store.achievements(this).size} открыто • ${Store.allAchievements().size} всего",Ui.GOLD){showAchievements()}
