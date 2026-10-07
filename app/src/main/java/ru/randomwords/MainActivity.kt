@@ -6,17 +6,13 @@ import android.graphics.Typeface
 import android.os.Bundle
 import android.view.Gravity
 import android.widget.*
-import android.view.ViewGroup
-import com.google.android.gms.ads.AdRequest
-import com.google.android.gms.ads.AdSize
-import com.google.android.gms.ads.AdView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 
 class MainActivity:AppCompatActivity(){
  private lateinit var root:LinearLayout
- override fun onCreate(b:Bundle?){super.onCreate(b);render();Ads.requestConsentAndInitialize(this){addBannerIfNeeded()}}
- override fun onResume(){super.onResume();if(::root.isInitialized){render();Ads.requestConsentAndInitialize(this){addBannerIfNeeded()}}}
+ override fun onCreate(b:Bundle?){super.onCreate(b);render()}
+ override fun onResume(){super.onResume();if(::root.isInitialized)render()}
  private fun render(){
   root=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(Ui.dp(this@MainActivity,20),Ui.dp(this@MainActivity,24),Ui.dp(this@MainActivity,20),Ui.dp(this@MainActivity,28));setBackgroundColor(Color.parseColor(Ui.BG))}
   val scroll=ScrollView(this).apply{isFillViewport=true};scroll.addView(root);Ui.applyContentWidth(root,this);setContentView(scroll)
@@ -37,19 +33,7 @@ class MainActivity:AppCompatActivity(){
   actionCard("◆","ДОСТИЖЕНИЯ","${Store.achievements(this).size} открыто • ${Store.allAchievements().size} всего",Ui.GOLD){showAchievements()}
   actionCard("📖","МОЯ КНИГА","Глобальная цель: 100 000 слов",Ui.BLUE){showBook()}
   actionCard("⚙","СЛОВАРЬ И НАСТРОЙКИ","Импорт TXT и параметры игры",Ui.MUTED){startActivity(Intent(this,SettingsActivity::class.java))}
-  actionCard("◌","КОНФИДЕНЦИАЛЬНОСТЬ","Настройки согласия на рекламу",Ui.MUTED){Ads.showPrivacyOptions(this)}
   root.addView(TextView(this).apply{text="«Слова случайны. История — твоя.»";gravity=Gravity.CENTER;Ui.text(this,16,Ui.GOLD);setPadding(Ui.dp(this@MainActivity,8),Ui.dp(this@MainActivity,26),Ui.dp(this@MainActivity,8),Ui.dp(this@MainActivity,6))},Ui.lp(this,70))
- }
- private fun addBannerIfNeeded(){
-  if(!::root.isInitialized || root.findViewWithTag<AdView>("main_banner")!=null)return
-  val adView=AdView(this).apply{
-   tag="main_banner"
-   adUnitId=getString(R.string.admob_banner_id)
-   val widthDp=(resources.displayMetrics.widthPixels/resources.displayMetrics.density).toInt()
-   setAdSize(AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(this@MainActivity,widthDp))
-  }
-  root.addView(adView,LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.WRAP_CONTENT).apply{topMargin=Ui.dp(this@MainActivity,12);bottomMargin=Ui.dp(this@MainActivity,8)})
-  adView.loadAd(AdRequest.Builder().build())
  }
  private fun actionCard(icon:String,title:String,sub:String,accent:String,click:()->Unit){
   val card=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER_VERTICAL;background=Ui.bg(Ui.CARD,22f);setPadding(Ui.dp(this@MainActivity,16),Ui.dp(this@MainActivity,14),Ui.dp(this@MainActivity,16),Ui.dp(this@MainActivity,14));setOnClickListener{click()}}
@@ -68,5 +52,4 @@ class MainActivity:AppCompatActivity(){
   val n=Store.bookWords(this);val pct=(n/1000).coerceAtMost(100)
   AlertDialog.Builder(this).setTitle("МОЯ КНИГА").setMessage("Накоплено: $n / 100 000 слов\nПрогресс: $pct%\n\nКаждый завершённый текст добавляет слова в общий объём. На 1 000 / 10 000 / 50 000 / 100 000 слов открываются достижения.").setPositiveButton("Продолжить",null).show()
  }
- companion object { const val TEST_BANNER_ID_FOR_RUNTIME = "ca-app-pub-3940256099942544/9214589741" }
 }
