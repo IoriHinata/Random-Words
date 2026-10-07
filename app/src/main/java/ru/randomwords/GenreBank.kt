@@ -47,5 +47,5 @@ object GenreBank {
             else -> common.random(r)
         }
     }
-    fun all():List<Genre>=common+rare+hybrids
+    fun all():List<Genre> =common+rare+hybrids
 }
