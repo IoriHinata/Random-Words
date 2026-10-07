@@ -114,7 +114,7 @@ class ChallengeActivity:AppCompatActivity(){
    override fun afterTextChanged(s:android.text.Editable?){}
   })
   editor.requestFocus();armIdle();startGoalTimer()
-  if(config.blind)h.postDelayed({if(!isFinishing&&!editor.text?.isBlank().orFalse()){blindHidden=true;renderWords()}},5000)
+  if(config.blind)h.postDelayed({if(!isFinishing&&editor.text?.isNotBlank() == true){blindHidden=true;renderWords()}},5000)
  }
 
  private fun addInfoCard(text:String){root.addView(TextView(this).apply{this.text=text;Ui.text(this,14,Ui.GOLD);background=Ui.bg(Ui.CARD,18f);setPadding(Ui.dp(context,14),Ui.dp(context,12),Ui.dp(context,14),Ui.dp(context,12))},LinearLayout.LayoutParams(-1,-2).apply{setMargins(0,0,0,Ui.dp(this@ChallengeActivity,10))})}
