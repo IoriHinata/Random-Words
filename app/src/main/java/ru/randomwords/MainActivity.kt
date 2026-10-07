@@ -27,7 +27,7 @@ class MainActivity:AppCompatActivity(){
   root.addView(hero,Ui.spaced(this,112,8,8))
   actionCard("✦","НОВОЕ ИСПЫТАНИЕ","Основное испытание всегда бесплатно",Ui.GOLD){startActivity(Intent(this,ChallengeActivity::class.java))}
   actionCard("☼","ЕЖЕДНЕВНЫЙ ВЫЗОВ","Один детерминированный вызов на сегодня",Ui.BLUE){startActivity(Intent(this,ChallengeActivity::class.java).putExtra("daily",true))}
-  actionCard("👁","БОСС НЕДЕЛИ","Сложный режим с особой наградой",Ui.RED){startActivity(Intent(this,ChallengeActivity::class.java))}
+  actionCard("👁","БОСС НЕДЕЛИ","Сложный режим с особой наградой",Ui.RED){startActivity(Intent(this,ChallengeActivity::class.java).putExtra("boss",true))}
   actionCard("♟","МИНИ-ИГРЫ","Память, ассоциации и скорость",Ui.GREEN){startActivity(Intent(this,MiniGamesActivity::class.java))}
   actionCard("▤","БИБЛИОТЕКА","Тексты, заметки, папки и экспорт",Ui.TEXT){startActivity(Intent(this,LibraryActivity::class.java))}
   actionCard("◆","ДОСТИЖЕНИЯ","${Store.achievements(this).size} открыто • ${Store.allAchievements().size} всего",Ui.GOLD){showAchievements()}
