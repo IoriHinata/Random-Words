@@ -1,8 +1,10 @@
-name: Build APK
+name: Build Android release
+
 on:
   push:
     branches: [ main ]
   workflow_dispatch:
+
 jobs:
   build:
     runs-on: ubuntu-24.04
@@ -17,8 +19,15 @@ jobs:
           gradle-version: "8.9"
       - name: Build debug APK
         run: gradle assembleDebug --no-daemon
-      - name: Upload APK
+      - name: Build release AAB
+        run: gradle bundleRelease --no-daemon
+      - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
           name: random-words-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
+      - name: Upload release AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: random-words-release-aab
+          path: app/build/outputs/bundle/release/app-release.aab
