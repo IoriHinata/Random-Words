@@ -4,6 +4,7 @@ import android.content.Context
 import org.json.JSONArray
 import org.json.JSONObject
 import kotlin.math.max
+import kotlin.math.roundToInt
 
 object Store {
     private const val PREF="random_words"
@@ -40,29 +41,75 @@ object Store {
     fun xp(c:Context)=p(c).getLong(XP,0L)
     fun level(c:Context)=1+(xp(c)/100).toInt()
     fun xpIntoLevel(c:Context)=xp(c)%100
-    fun ink(c:Context)=p(c).getInt(INK,10)
+    fun ink(c:Context)=p(c).getInt(INK,100)
     fun bookWords(c:Context)=p(c).getInt(BOOK,0)
     fun rank(c:Context):String=when(level(c)){in 1..4->"Новичок";in 5..9->"Рассказчик";in 10..19->"Автор";in 20..34->"Мастер";in 35..49->"Романист";else->"Архитектор историй"}
     fun seasonDay(c:Context):Int{val now=System.currentTimeMillis();var start=p(c).getLong(SEASON_START,0L);if(start==0L){start=now;p(c).edit().putLong(SEASON_START,start).apply()};return (((now-start)/(24*60*60*1000L)).toInt()+1).coerceAtMost(30)}
     fun marathon(c:Context)=p(c).getInt(MARATHON,0)
     fun addMarathon(c:Context,words:Int){p(c).edit().putInt(MARATHON,marathon(c)+words).apply()}
 
+    // Основное испытание имеет нулевую цену входа. Остальные режимы используют
+    // большие цены: чернила — ресурс прогресса, а не мелкая плата.
     fun challengeCost(c:Context,base:Int):Int{
         if(base<=0)return 0
-        val discount=when(streak(c)){in 0..2->0;in 3..6->1;in 7..13->2;in 14..29->3;in 30..59->4;else->5}
-        return max(1,base-discount)
+        val discount=when(streak(c)){in 0..2->0;in 3..6->50;in 7..13->100;in 14..29->150;in 30..59->200;else->250}
+        return max(100,base-discount)
     }
-    fun spendInk(c:Context,amount:Int):Boolean{if(amount<=0)return true;val have=ink(c);if(have<amount)return false;p(c).edit().putInt(INK,have-amount).apply();return true}
+    fun spendInk(c:Context,amount:Int):Boolean{
+        if(amount<=0)return true
+        val have=ink(c)
+        if(have<amount)return false
+        p(c).edit().putInt(INK,have-amount).apply()
+        return true
+    }
     fun addInk(c:Context,amount:Int){if(amount>0)p(c).edit().putInt(INK,ink(c)+amount).apply()}
 
-    fun rewardSuccess(c:Context,score:Int,words:Int,bonusXp:Int=0,bonusInk:Int=0){
-        val q=p(c);val oldStreak=streak(c);val newStreak=oldStreak+1
+    // Каждое реально появившееся новое слово оплачивается одной чернильницей.
+    // Возвращаем false, если ресурса не хватило — вызывающий код должен остановить набор.
+    fun payForWrittenWords(c:Context,deltaWords:Int):Boolean{
+        if(deltaWords<=0)return true
+        return spendInk(c,deltaWords)
+    }
+
+    // Провал дополнительно списывает столько чернил, сколько слов осталось в тексте.
+    // Тем самым уже написанные слова оплачиваются дважды: при наборе и при провале.
+    fun failurePenalty(c:Context,wordsLost:Int):Int{
+        if(wordsLost<=0)return 0
+        val actual=minOf(wordsLost,ink(c))
+        if(actual>0)p(c).edit().putInt(INK,ink(c)-actual).apply()
+        return actual
+    }
+
+    // Награда строится от количества написанных слов. Она гарантированно выше
+    // их стоимости на успешном задании; сложность, серия и режим усиливают множитель.
+    fun rewardSuccess(
+        c:Context,
+        score:Int,
+        words:Int,
+        bonusXp:Int=0,
+        modeMultiplier:Double=1.0,
+        difficultyMultiplier:Double=1.0
+    ):Int{
+        val q=p(c)
+        val oldStreak=streak(c)
+        val newStreak=oldStreak+1
+        val comboMultiplier=1.0+(minOf(newStreak,20)*0.02)
+        val multiplier=modeMultiplier*difficultyMultiplier*comboMultiplier
+        val payout=maxOf(words+1,(words*multiplier).roundToInt())
         val xpGain=10L+words/5+bonusXp+(if(words>=100)50 else 0)+(if(score>best(c))100 else 0)
-        val inkGain=3+minOf(newStreak,20)/4+bonusInk
-        q.edit().putLong(XP,xp(c)+xpGain).putInt(INK,ink(c)+inkGain).putInt(STREAK,newStreak).putInt(BEST_STREAK,maxOf(bestStreak(c),newStreak)).putInt(BEST,maxOf(score,best(c))).putInt(TOTAL,total(c)+1).putInt(BOOK,bookWords(c)+words).apply()
+        q.edit()
+            .putLong(XP,xp(c)+xpGain)
+            .putInt(INK,ink(c)+payout)
+            .putInt(STREAK,newStreak)
+            .putInt(BEST_STREAK,maxOf(bestStreak(c),newStreak))
+            .putInt(BEST,maxOf(score,best(c)))
+            .putInt(TOTAL,total(c)+1)
+            .putInt(BOOK,bookWords(c)+words)
+            .apply()
         addMarathon(c,words)
         if(newStreak>=3)unlock(c,"Серия 3");if(newStreak>=7)unlock(c,"Серия 7");if(newStreak>=30)unlock(c,"Серия 30");if(newStreak>=100)unlock(c,"Серия 100")
         if(total(c)>=10)unlock(c,"10 текстов");if(bookWords(c)>=1000)unlock(c,"1000 слов книги");if(bookWords(c)>=10000)unlock(c,"10000 слов книги")
+        return payout
     }
     fun registerSuccess(c:Context,score:Int){rewardSuccess(c,score,0)}
     fun breakStreak(c:Context){p(c).edit().putInt(STREAK,0).apply()}
