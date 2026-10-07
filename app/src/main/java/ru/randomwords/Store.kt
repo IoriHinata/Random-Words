@@ -12,6 +12,7 @@ object Store {
     private const val STREAK="streak"; private const val BEST_STREAK="best_streak"; private const val BEST="best"; private const val TOTAL="total"
     private const val ACH="achievements"; private const val XP="xp"; private const val INK="ink"; private const val BOOK="book_words"
     private const val LAST_DAY="last_day"; private const val SEASON_START="season_start"; private const val MARATHON="marathon"
+    private const val LAST_BAILOUT_DAY="last_bailout_day"
     private fun p(c:Context)=c.getSharedPreferences(PREF,0)
 
     fun words(c:Context):MutableList<String>{
@@ -41,19 +42,29 @@ object Store {
     fun xp(c:Context)=p(c).getLong(XP,0L)
     fun level(c:Context)=1+(xp(c)/100).toInt()
     fun xpIntoLevel(c:Context)=xp(c)%100
-    fun ink(c:Context)=p(c).getInt(INK,100)
+    fun ink(c:Context)=p(c).getInt(INK,0)
     fun bookWords(c:Context)=p(c).getInt(BOOK,0)
     fun rank(c:Context):String=when(level(c)){in 1..4->"Новичок";in 5..9->"Рассказчик";in 10..19->"Автор";in 20..34->"Мастер";in 35..49->"Романист";else->"Архитектор историй"}
     fun seasonDay(c:Context):Int{val now=System.currentTimeMillis();var start=p(c).getLong(SEASON_START,0L);if(start==0L){start=now;p(c).edit().putLong(SEASON_START,start).apply()};return (((now-start)/(24*60*60*1000L)).toInt()+1).coerceAtMost(30)}
     fun marathon(c:Context)=p(c).getInt(MARATHON,0)
     fun addMarathon(c:Context,words:Int){p(c).edit().putInt(MARATHON,marathon(c)+words).apply()}
 
-    // Основное испытание имеет нулевую цену входа. Остальные режимы используют
-    // большие цены: чернила — ресурс прогресса, а не мелкая плата.
+    private fun dayKey():String=java.text.SimpleDateFormat("yyyyMMdd",java.util.Locale.US).format(java.util.Date())
+
+    fun ensureDailyBailout(c:Context):Int{
+        val today=dayKey()
+        val q=p(c)
+        if(q.getString(LAST_BAILOUT_DAY,"")==today || ink(c)>0)return 0
+        val amount=(200.0*(1.0+(level(c)-1)*0.01)).roundToInt()
+        q.edit().putInt(INK,amount).putString(LAST_BAILOUT_DAY,today).apply()
+        return amount
+    }
+
     fun challengeCost(c:Context,base:Int):Int{
         if(base<=0)return 0
-        val discount=when(streak(c)){in 0..2->0;in 3..6->50;in 7..13->100;in 14..29->150;in 30..59->200;else->250}
-        return max(100,base-discount)
+        val levelFactor=1.0+(level(c)-1)*0.05
+        val streakDiscount=minOf(0.20,streak(c)*0.01)
+        return max(100,(base*levelFactor*(1.0-streakDiscount)).roundToInt())
     }
     fun spendInk(c:Context,amount:Int):Boolean{
         if(amount<=0)return true
@@ -64,15 +75,11 @@ object Store {
     }
     fun addInk(c:Context,amount:Int){if(amount>0)p(c).edit().putInt(INK,ink(c)+amount).apply()}
 
-    // Каждое реально появившееся новое слово оплачивается одной чернильницей.
-    // Возвращаем false, если ресурса не хватило — вызывающий код должен остановить набор.
     fun payForWrittenWords(c:Context,deltaWords:Int):Boolean{
         if(deltaWords<=0)return true
         return spendInk(c,deltaWords)
     }
 
-    // Провал дополнительно списывает столько чернил, сколько слов осталось в тексте.
-    // Тем самым уже написанные слова оплачиваются дважды: при наборе и при провале.
     fun failurePenalty(c:Context,wordsLost:Int):Int{
         if(wordsLost<=0)return 0
         val actual=minOf(wordsLost,ink(c))
@@ -80,22 +87,16 @@ object Store {
         return actual
     }
 
-    // Награда строится от количества написанных слов. Она гарантированно выше
-    // их стоимости на успешном задании; сложность, серия и режим усиливают множитель.
-    fun rewardSuccess(
-        c:Context,
-        score:Int,
-        words:Int,
-        bonusXp:Int=0,
-        modeMultiplier:Double=1.0,
-        difficultyMultiplier:Double=1.0
-    ):Int{
+    fun rewardSuccess(c:Context,score:Int,words:Int,entryCost:Int=0,bonusXp:Int=0,modeMultiplier:Double=1.0,difficultyMultiplier:Double=1.0):Int{
         val q=p(c)
         val oldStreak=streak(c)
         val newStreak=oldStreak+1
         val comboMultiplier=1.0+(minOf(newStreak,20)*0.02)
-        val multiplier=modeMultiplier*difficultyMultiplier*comboMultiplier
-        val payout=maxOf(words+1,(words*multiplier).roundToInt())
+        val levelMultiplier=1.0+(level(c)-1)*0.005
+        val multiplier=modeMultiplier*difficultyMultiplier*comboMultiplier*levelMultiplier
+        val wordReward=(words*multiplier).roundToInt()
+        val profit=(words*0.15).roundToInt().coerceAtLeast(5)
+        val payout=maxOf(words+1,wordReward,words+entryCost+profit)
         val xpGain=10L+words/5+bonusXp+(if(words>=100)50 else 0)+(if(score>best(c))100 else 0)
         q.edit()
             .putLong(XP,xp(c)+xpGain)
@@ -111,9 +112,10 @@ object Store {
         if(total(c)>=10)unlock(c,"10 текстов");if(bookWords(c)>=1000)unlock(c,"1000 слов книги");if(bookWords(c)>=10000)unlock(c,"10000 слов книги")
         return payout
     }
+
     fun registerSuccess(c:Context,score:Int){rewardSuccess(c,score,0)}
     fun breakStreak(c:Context){p(c).edit().putInt(STREAK,0).apply()}
-    fun achievements(c:Context)=p(c).getStringSet(ACH,emptySet())?.toMutableSet()?:mutableSetOf()
+    fun achievements(c:Context)=p(c).getStringSet(ACH,emptySet())?.toMutableSet()?:mutableSetOf<String>()
     fun unlock(c:Context,key:String){val s=achievements(c);if(s.add(key))p(c).edit().putStringSet(ACH,s).apply()}
     fun allAchievements():List<String>{
         val a=mutableListOf<String>()
