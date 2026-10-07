@@ -73,8 +73,8 @@ class ChallengeActivity:AppCompatActivity(){
    val pos=mode.selectedItemPosition
    val cm=when(pos){1->ChallengeMode.GENRE;2->ChallengeMode.RARE_GENRE;3->ChallengeMode.HYBRID;4->ChallengeMode.STORY;5->ChallengeMode.CURSED;6->ChallengeMode.BOSS;7->ChallengeMode.DUEL;else->ChallengeMode.STANDARD}
    val base=when(cm){ChallengeMode.STANDARD->0;ChallengeMode.GENRE->3;ChallengeMode.RARE_GENRE->4;ChallengeMode.HYBRID->6;ChallengeMode.STORY->5;ChallengeMode.CURSED->4;ChallengeMode.BOSS->7;ChallengeMode.DUEL->5}
-   val cost=Store.challengeCost(this,base)
-   if(!Store.spendInk(this,cost)){AlertDialog.Builder(this).setTitle("Недостаточно чернил").setMessage("Нужно ${cost} чернил. Основное испытание всегда бесплатно — сыграй его, чтобы заработать ресурс.").setPositiveButton("Основное"){_,_->mode.setSelection(0)}.setNegativeButton("Отмена",null).show();return@setOnClickListener}
+   val cost=Store.challengeCost(this@ChallengeActivity,base)
+   if(!Store.spendInk(this@ChallengeActivity,cost)){AlertDialog.Builder(this).setTitle("Недостаточно чернил").setMessage("Нужно ${cost} чернил. Основное испытание всегда бесплатно — сыграй его, чтобы заработать ресурс.").setPositiveButton("Основное"){_,_->mode.setSelection(0)}.setNegativeButton("Отмена",null).show();return@setOnClickListener}
    config=ChallengeConfig(c,gt,gv,sec,blind.isChecked,chaos.isChecked,boss.isChecked,repeat.isChecked,false,duel.isChecked,last.isChecked,cm)
    startChallenge()
   }},lp(60))
@@ -131,14 +131,14 @@ class ChallengeActivity:AppCompatActivity(){
   var row:LinearLayout?=null
   words.forEachIndexed{idx,w->
    if(idx%2==0){row=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER};wordsBox.addView(row,LinearLayout.LayoutParams(-1,Ui.dp(this,56)))}
-   val clean=w.replace(" ★","");val used=containsWord(editor.text.toString(),clean)
+   val clean=w.replace(" ★","");val used=containsWord(editor.text?.toString().orEmpty(),clean)
    val tv=TextView(this).apply{text=clean+if(w.endsWith(" ★"))" ★" else "";gravity=Gravity.CENTER;Ui.text(this,14,if(used)Ui.GREEN else if(w.endsWith(" ★"))Ui.GOLD else Ui.TEXT);setTypeface(typeface,if(used)Typeface.BOLD else Typeface.NORMAL);background=Ui.bg(if(used)"#213528" else Ui.CARD2,14f);setPadding(Ui.dp(context,7),Ui.dp(context,8),Ui.dp(context,7),Ui.dp(context,8))}
    row?.addView(tv,LinearLayout.LayoutParams(0,Ui.dp(this,48),1f).apply{setMargins(Ui.dp(this@ChallengeActivity,3),4,Ui.dp(this@ChallengeActivity,3),4)})
   }
  }
  private fun updateInfo(){if(!::editor.isInitialized||!::info.isInitialized)return;val wc=countWords(editor.text.toString());val used=words.count{containsWord(editor.text.toString(),it.replace(" ★",""))};val goal=if(config.goalType==GoalType.TIME)"Время: "+format(config.goal-seconds)else if(config.goalType==GoalType.WORDS)"Цель: "+config.goal else "Без цели";info.text="Слов: ${wc} • Ключевых слов: ${used}/${words.size} • ${goal} • Чернила: ${Store.ink(this)}"}
  private fun armIdle(){h.removeCallbacksAndMessages(null);h.postDelayed({if(editor.text.isNotBlank())timeout()},config.idleSeconds*1000L)}
- private fun timeout(){Store.breakStreak(this);val saved=editor.text.toString();reset=true;editor.setText("");reset=false;timer?.cancel();AlertDialog.Builder(this).setTitle("Пауза поймала тебя").setMessage("Тишина превысила ${config.idleSeconds} секунд. Текст удалён. Серия сброшена.").setNegativeButton("Новые слова"){_,_->startChallenge()}.setPositiveButton("Последний шанс"){_,_->shield=true;editor.setText(saved);editor.setSelection(editor.text.length);armIdle()}.show()}
+ private fun timeout(){Store.breakStreak(this);val saved=editor.text.toString();reset=true;editor.setText("");reset=false;timer?.cancel();AlertDialog.Builder(this).setTitle("Пауза поймала тебя").setMessage("Тишина превысила ${config.idleSeconds} секунд. Текст удалён. Серия сброшена.").setNegativeButton("Новые слова"){_,_->startChallenge()}.setPositiveButton("Последний шанс"){_,_->shield=true;editor.setText(saved);editor.setSelection(editor.text?.length ?: 0);armIdle()}.show()}
  private fun startGoalTimer(){timer?.cancel();timer=object:CountDownTimer(if(config.goalType==GoalType.TIME)config.goal*1000L else 24*60*60*1000L,1000){override fun onTick(ms:Long){seconds++;if(config.chaos&&seconds%45==0)addChaosWord();updateInfo()};override fun onFinish(){if(config.goalType==GoalType.TIME)finishSuccess()}}.start()}
  private fun addChaosWord(){val extra=Store.words(this).filterNot{words.contains(it)}.shuffled().firstOrNull()?:return;words.add(extra);renderWords();Toast.makeText(this,"ХАОС: добавлено слово «${extra}»",Toast.LENGTH_SHORT).show()}
  private fun goalReached():Boolean{
@@ -149,7 +149,7 @@ class ChallengeActivity:AppCompatActivity(){
  }
  private fun finishSuccess(){
   if(config.goalType==GoalType.WORDS&&!goalReached())return
-  if(editor.text.isBlank())return
+  if(editor.text?.isBlank() != false)return
   timer?.cancel();h.removeCallbacksAndMessages(null)
   val text=editor.text.toString();val cleanWords=words.map{it.replace(" ★","")}
   if(cleanWords.any{!containsWord(text,it)}){AlertDialog.Builder(this).setTitle("Не все слова использованы").setMessage("Используй каждое ключевое слово.").setPositiveButton("Продолжить",null).show();return}
