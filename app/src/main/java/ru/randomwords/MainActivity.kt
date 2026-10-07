@@ -48,7 +48,8 @@ class MainActivity : AppCompatActivity() {
         actionCard("☼", "ЕЖЕДНЕВНЫЙ ВЫЗОВ", "Один и тот же вызов сегодня для тебя", Ui.BLUE) {
             startActivity(Intent(this, ChallengeActivity::class.java).putExtra("daily", true))
         }
-        actionCard("♟", "МИНИ-ИГРЫ", "Три коротких режима для разгона писательской реакции", Ui.GREEN) { startActivity(Intent(this, MiniGamesActivity::class.java)) }\n        actionCard("▤", "БИБЛИОТЕКА", "Тексты, заметки, папки и экспорт", Ui.TEXT) {
+        actionCard("♟", "МИНИ-ИГРЫ", "Три коротких режима для разгона писательской реакции", Ui.GREEN) { startActivity(Intent(this, MiniGamesActivity::class.java)) }
+        actionCard("▤", "БИБЛИОТЕКА", "Тексты, заметки, папки и экспорт", Ui.TEXT) {
             startActivity(Intent(this, LibraryActivity::class.java))
         }
         actionCard("◆", "СТАТИСТИКА", "Достижения и история писателя", Ui.GOLD) { showStats() }
