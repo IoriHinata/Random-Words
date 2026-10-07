@@ -16,7 +16,7 @@ import androidx.appcompat.app.AppCompatActivity
 class MainActivity:AppCompatActivity(){
  private lateinit var root:LinearLayout
  override fun onCreate(b:Bundle?){super.onCreate(b);render();Ads.requestConsentAndInitialize(this){addBannerIfNeeded()}}
- override fun onResume(){super.onResume();if(::root.isInitialized)render()}
+ override fun onResume(){super.onResume();if(::root.isInitialized){render();Ads.requestConsentAndInitialize(this){addBannerIfNeeded()}}}
  private fun render(){
   root=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(Ui.dp(this@MainActivity,20),Ui.dp(this@MainActivity,24),Ui.dp(this@MainActivity,20),Ui.dp(this@MainActivity,28));setBackgroundColor(Color.parseColor(Ui.BG))}
   val scroll=ScrollView(this).apply{isFillViewport=true};scroll.addView(root);Ui.applyContentWidth(root,this);setContentView(scroll)
@@ -44,7 +44,7 @@ class MainActivity:AppCompatActivity(){
   if(!::root.isInitialized || root.findViewWithTag<AdView>("main_banner")!=null)return
   val adView=AdView(this).apply{
    tag="main_banner"
-   adUnitId=TEST_BANNER_ID_FOR_RUNTIME
+   adUnitId=getString(R.string.admob_banner_id)
    val widthDp=(resources.displayMetrics.widthPixels/resources.displayMetrics.density).toInt()
    setAdSize(AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(this@MainActivity,widthDp))
   }
