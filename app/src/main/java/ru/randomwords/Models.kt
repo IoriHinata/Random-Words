@@ -12,7 +12,8 @@ data class ChallengeConfig(
     val daily:Boolean=false,
     val duel:Boolean=false,
     val lastSentence:Boolean=false,
-    val mode:ChallengeMode=ChallengeMode.STANDARD
+    val mode:ChallengeMode=ChallengeMode.STANDARD,
+    val category:String="Все"
 )
 enum class GoalType { WORDS,TIME,ENDLESS }
 enum class ChallengeMode { STANDARD,GENRE,RARE_GENRE,HYBRID,STORY,CURSED,BOSS,DUEL }
