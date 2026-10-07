@@ -52,6 +52,10 @@ class ChallengeActivity:AppCompatActivity(){
    override fun onNothingSelected(p:AdapterView<*>?){}
    override fun onItemSelected(p:AdapterView<*>?,v:android.view.View?,pos:Int,id:Long){updateModeInfo()}
   }
+  label("КАТЕГОРИЯ СЛОВ")
+  val category=Spinner(this)
+  category.adapter=ArrayAdapter(this,android.R.layout.simple_spinner_dropdown_item,WordBank.categories())
+  root.addView(category,lp(52))
   label("КОЛИЧЕСТВО СЛОВ")
   val count=Spinner(this);count.adapter=ArrayAdapter(this,android.R.layout.simple_spinner_dropdown_item,arrayOf("1","2","3","5","7","10"));count.setSelection(2);root.addView(count,lp(52))
   label("ЦЕЛЬ")
@@ -75,7 +79,7 @@ class ChallengeActivity:AppCompatActivity(){
    val base=when(cm){ChallengeMode.STANDARD->0;ChallengeMode.GENRE->3;ChallengeMode.RARE_GENRE->4;ChallengeMode.HYBRID->6;ChallengeMode.STORY->5;ChallengeMode.CURSED->4;ChallengeMode.BOSS->7;ChallengeMode.DUEL->5}
    val cost=Store.challengeCost(this@ChallengeActivity,base)
    if(!Store.spendInk(this@ChallengeActivity,cost)){AlertDialog.Builder(this@ChallengeActivity).setTitle("Недостаточно чернил").setMessage("Нужно ${cost} чернил. Основное испытание всегда бесплатно — сыграй его, чтобы заработать ресурс.").setPositiveButton("Основное"){_,_->mode.setSelection(0)}.setNegativeButton("Отмена",null).show();return@setOnClickListener}
-   config=ChallengeConfig(c,gt,gv,sec,blind.isChecked,chaos.isChecked,boss.isChecked,repeat.isChecked,false,duel.isChecked,last.isChecked,cm)
+   config=ChallengeConfig(c,gt,gv,sec,blind.isChecked,chaos.isChecked,boss.isChecked,repeat.isChecked,false,duel.isChecked,last.isChecked,cm,category.selectedItem?.toString() ?: "Все")
    startChallenge()
   }},lp(60))
   root.addView(Button(this).apply{text="☼  ЕЖЕДНЕВНЫЙ ВЫЗОВ — БЕСПЛАТНО";setOnClickListener{config=ChallengeConfig(3,GoalType.WORDS,100,5,false,false,true,false,true,false,true,ChallengeMode.STANDARD);startChallenge()}},lp(60))
@@ -86,7 +90,7 @@ class ChallengeActivity:AppCompatActivity(){
   val seed=when{config.daily->dateSeed();config.mode==ChallengeMode.BOSS->dateSeed()/7;else->System.currentTimeMillis().toInt()}
   val rnd=Random(seed)
   currentGenre=when(config.mode){ChallengeMode.GENRE,ChallengeMode.RARE_GENRE,ChallengeMode.HYBRID->GenreBank.random(config.mode,seed);else->null}
-  val bank=Store.words(this)
+  val bank=WordBank.byCategory(config.category).map{it.word}.ifEmpty{Store.words(this)}
   words=(if(config.repeatWords&&lastWords.isNotEmpty())lastWords.toMutableList()else bank.shuffled(rnd).take(config.count).toMutableList())
   if(config.mode==ChallengeMode.CURSED&&words.isNotEmpty())words.add(bank.filterNot{words.contains(it)}.randomOrNull(rnd)?:"память")
   if(config.boss&&words.isNotEmpty())words[words.lastIndex]=words.last()+" ★"
@@ -132,8 +136,9 @@ class ChallengeActivity:AppCompatActivity(){
   words.forEachIndexed{idx,w->
    if(idx%2==0){row=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER};wordsBox.addView(row,LinearLayout.LayoutParams(-1,Ui.dp(this,56)))}
    val clean=w.replace(" ★","");val used=containsWord(editor.text?.toString().orEmpty(),clean)
-   val tv=TextView(this).apply{text=clean+if(w.endsWith(" ★"))" ★" else "";gravity=Gravity.CENTER;Ui.text(this,14,if(used)Ui.GREEN else if(w.endsWith(" ★"))Ui.GOLD else Ui.TEXT);setTypeface(typeface,if(used)Typeface.BOLD else Typeface.NORMAL);background=Ui.bg(if(used)"#213528" else Ui.CARD2,14f);setPadding(Ui.dp(context,7),Ui.dp(context,8),Ui.dp(context,7),Ui.dp(context,8))}
+   val tv=TextView(this).apply{text=clean+if(w.endsWith(" ★"))" ★" else if(WordBank.isComplex(clean))"  ⓘ" else "";gravity=Gravity.CENTER;Ui.text(this,14,if(used)Ui.GREEN else if(w.endsWith(" ★"))Ui.GOLD else Ui.TEXT);setTypeface(typeface,if(used)Typeface.BOLD else Typeface.NORMAL);background=Ui.bg(if(used)"#213528" else Ui.CARD2,14f);setPadding(Ui.dp(context,7),Ui.dp(context,8),Ui.dp(context,7),Ui.dp(context,8))}
    row?.addView(tv,LinearLayout.LayoutParams(0,Ui.dp(this,48),1f).apply{setMargins(Ui.dp(this@ChallengeActivity,3),4,Ui.dp(this@ChallengeActivity,3),4)})
+   if(WordBank.isComplex(clean)) tv.setOnClickListener{showWordExplanation(it,clean)}
   }
  }
  private fun updateInfo(){if(!::editor.isInitialized||!::info.isInitialized)return;val currentText=editor.text?.toString().orEmpty();val wc=countWords(currentText);val used=words.count{containsWord(currentText,it.replace(" ★",""))};val goal=if(config.goalType==GoalType.TIME)"Время: "+format(config.goal-seconds)else if(config.goalType==GoalType.WORDS)"Цель: "+config.goal else "Без цели";info.text="Слов: ${wc} • Ключевых слов: ${used}/${words.size} • ${goal} • Чернила: ${Store.ink(this)}"}
@@ -173,13 +178,20 @@ class ChallengeActivity:AppCompatActivity(){
   val d=Draft(System.currentTimeMillis(),"Без названия",text,cleanWords,System.currentTimeMillis(),seconds,score)
   showAnalysis(d,score,wc)
  }
+ private fun showWordExplanation(anchor:android.view.View,word:String){
+  val definition=WordBank.explanation(word) ?: return
+  val box=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(Ui.dp(context,14),Ui.dp(context,12),Ui.dp(context,14),Ui.dp(context,12));background=Ui.bg(Ui.CARD,18f)}
+  box.addView(TextView(this).apply{text=word.replaceFirstChar{it.uppercase()};Ui.text(this,16,Ui.GOLD);setTypeface(typeface,Typeface.BOLD)})
+  box.addView(TextView(this).apply{text=definition;Ui.text(this,14,Ui.TEXT);setPadding(0,Ui.dp(context,6),0,0)})
+  PopupWindow(box,Ui.dp(this,310),-2,true).apply{elevation=12f;setBackgroundDrawable(android.graphics.drawable.ColorDrawable(Color.TRANSPARENT));isOutsideTouchable=true}.also{it.showAsDropDown(anchor,0,-Ui.dp(this,8))}
+ }
  private fun showAnalysis(d:Draft,score:Int,wc:Int){
   val sentences=d.text.split(Regex("[.!?]+")).map{it.trim()}.filter{it.isNotBlank()};val chars=d.text.count{it.isLetter()};val avg=if(wc==0)0.0 else chars.toDouble()/wc;val longest=sentences.maxByOrNull{it.length}?.length?:0
   val message="Счёт: ${score}\nСлов: ${wc}\nПредложений: ${sentences.size}\nСредняя длина слова: ${String.format(java.util.Locale.US,"%.1f",avg)}\nСамое длинное предложение: ${longest} символов\n\nXP и чернила начислены.\nСерия: ${Store.streak(this)} • Уровень: ${Store.level(this)} • Чернила: ${Store.ink(this)}"
   val e=EditText(this);e.hint="Название текста"
   AlertDialog.Builder(this).setTitle("Текст завершён").setMessage(message).setView(e).setPositiveButton("В библиотеку"){_,_->d.title=if(e.text.isBlank())"Текст "+java.text.SimpleDateFormat("dd.MM.yyyy",java.util.Locale.getDefault()).format(java.util.Date())else e.text.toString();Store.saveDraft(this,d);finish()}.setNeutralButton("Сохранить без названия"){_,_->Store.saveDraft(this,d);finish()}.show()
  }
- private fun containsWord(text:String,w:String)=text.lowercase().replace(Regex("[^\\p{L}\\s]")," ").split(Regex("\\s+")).contains(w.lowercase())
+ private fun containsWord(text:String,w:String)=WordMatcher.matches(text,w)
  private fun countWords(s:String)=s.trim().let{if(it.isEmpty())0 else it.split(Regex("\\s+")).size}
  private fun format(s:Int)="%02d:%02d".format(max(0,s)/60,max(0,s)%60)
  private fun dateSeed()=java.text.SimpleDateFormat("yyyyMMdd",java.util.Locale.US).format(java.util.Date()).hashCode()
