@@ -31,7 +31,16 @@ class ChallengeActivity:AppCompatActivity(){
  private var chargedWordCount=0
  private var lastPaidWordCount=0
 
- override fun onCreate(b:Bundle?){super.onCreate(b);setup();if(intent.getBooleanExtra("daily",false)){root.post{config=ChallengeConfig(3,GoalType.WORDS,100,5,false,false,true,false,true,false,true,ChallengeMode.STANDARD);startChallenge()}}else if(intent.getBooleanExtra("boss",false)){root.post{config=ChallengeConfig(5,GoalType.WORDS,200,4,false,false,true,false,false,false,true,ChallengeMode.BOSS);startChallenge()}}}
+ override fun onCreate(b:Bundle?){
+  super.onCreate(b)
+  Store.ensureDailyBailout(this)
+  setup()
+  if(intent.getBooleanExtra("daily",false)){
+   root.post{launchPreset(ChallengeConfig(3,GoalType.WORDS,100,5,false,false,true,false,true,false,true,ChallengeMode.STANDARD),"Ежедневный вызов",700)}
+  }else if(intent.getBooleanExtra("boss",false)){
+   root.post{launchPreset(ChallengeConfig(5,GoalType.WORDS,200,4,false,false,true,false,false,false,true,ChallengeMode.BOSS),"Босс недели",3000)}
+  }
+}
 
  private fun setup(){
   root=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(Ui.dp(this@ChallengeActivity,18),Ui.dp(this@ChallengeActivity,18),Ui.dp(this@ChallengeActivity,18),Ui.dp(this@ChallengeActivity,24));setBackgroundColor(Color.parseColor(Ui.BG))}
@@ -40,14 +49,14 @@ class ChallengeActivity:AppCompatActivity(){
   label("РЕЖИМ")
   val mode=Spinner(this)
   mode.adapter=ArrayAdapter(this,android.R.layout.simple_spinner_dropdown_item,arrayOf(
-   "Основное — бесплатно","Случайный жанр — 250 чернил","Непопулярный жанр — 500 чернил","Гибрид жанров — 800 чернил",
-   "Сюжетный режим — 5 чернил","Проклятое слово — 900 чернила","Босс недели — 7 чернил","Дуэль с рекордом — 5 чернил"))
+   "Основное — бесплатно","Случайный жанр — 300 чернил","Непопулярный жанр — 700 чернил","Гибрид жанров — 1200 чернил",
+   "Сюжетный режим — 1500 чернил","Проклятое слово — 2000 чернил","Босс недели — 3000 чернил","Дуэль с рекордом — 2200 чернил"))
   root.addView(mode,lp(54))
   val modeInfo=TextView(this).apply{Ui.text(this,13,Ui.MUTED);setPadding(4,4,4,12)}
   root.addView(modeInfo,LinearLayout.LayoutParams(-1,-2))
   fun updateModeInfo(){
    val pos=mode.selectedItemPosition
-   val base=when(pos){1->250;2->500;3->800;4->650;5->900;6->1500;7->1200;else->0}
+   val base=when(pos){1->300;2->700;3->1200;4->1500;5->2000;6->3000;7->2200;else->0}
    modeInfo.text=if(base==0)"Бесплатно • серия не расходуется." else "Цена: ${Store.challengeCost(this,base)} чернил • у тебя ${Store.ink(this)} • серия ${Store.streak(this)} снижает цену."
   }
   mode.onItemSelectedListener=object:AdapterView.OnItemSelectedListener{
@@ -78,7 +87,7 @@ class ChallengeActivity:AppCompatActivity(){
    val sec=when(idle.selectedItemPosition){0->6;1->5;2->4;else->3}
    val pos=mode.selectedItemPosition
    val cm=when(pos){1->ChallengeMode.GENRE;2->ChallengeMode.RARE_GENRE;3->ChallengeMode.HYBRID;4->ChallengeMode.STORY;5->ChallengeMode.CURSED;6->ChallengeMode.BOSS;7->ChallengeMode.DUEL;else->ChallengeMode.STANDARD}
-   val base=when(cm){ChallengeMode.STANDARD->0;ChallengeMode.GENRE->3;ChallengeMode.RARE_GENRE->4;ChallengeMode.HYBRID->6;ChallengeMode.STORY->5;ChallengeMode.CURSED->4;ChallengeMode.BOSS->7;ChallengeMode.DUEL->5}
+   val base=when(cm){ChallengeMode.STANDARD->0;ChallengeMode.GENRE->300;ChallengeMode.RARE_GENRE->700;ChallengeMode.HYBRID->1200;ChallengeMode.STORY->1500;ChallengeMode.CURSED->2000;ChallengeMode.BOSS->3000;ChallengeMode.DUEL->2200}
    val cost=Store.challengeCost(this@ChallengeActivity,base)
    if(!Store.spendInk(this@ChallengeActivity,cost)){AlertDialog.Builder(this@ChallengeActivity).setTitle("Недостаточно чернил").setMessage("Нужно ${cost} чернил. Основное испытание всегда бесплатно — сыграй его, чтобы заработать ресурс.").setPositiveButton("Основное"){_,_->mode.setSelection(0)}.setNegativeButton("Отмена",null).show();return@setOnClickListener}
    config=ChallengeConfig(c,gt,gv,sec,blind.isChecked,chaos.isChecked,boss.isChecked,repeat.isChecked,false,duel.isChecked,last.isChecked,cm,category.selectedItem?.toString() ?: "Все")
@@ -141,6 +150,18 @@ class ChallengeActivity:AppCompatActivity(){
   if(config.blind)h.postDelayed({if(!isFinishing&&editor.text?.isNotBlank() == true){blindHidden=true;renderWords()}},5000)
  }
 
+ private fun launchPreset(preset:ChallengeConfig,label:String,base:Int){
+  val cost=Store.challengeCost(this,base)
+  if(!Store.spendInk(this,cost)){
+   AlertDialog.Builder(this).setTitle("Недостаточно чернил")
+    .setMessage("$label стоит $cost 🖋. Основное испытание бесплатно — оно поможет восстановить запас.")
+    .setPositiveButton("Основное"){_,_->startActivity(Intent(this,ChallengeActivity::class.java))}
+    .setNegativeButton("Назад"){_,_->finish()}.show()
+   return
+  }
+  config=preset
+  startChallenge()
+ }
  private fun addInfoCard(text:String){root.addView(TextView(this).apply{this.text=text;Ui.text(this,14,Ui.GOLD);background=Ui.bg(Ui.CARD,18f);setPadding(Ui.dp(context,14),Ui.dp(context,12),Ui.dp(context,14),Ui.dp(context,12))},LinearLayout.LayoutParams(-1,-2).apply{setMargins(0,0,0,Ui.dp(this@ChallengeActivity,10))})}
  private fun storyPrompt(seed:Int):String{
   val r=Random(seed);val hero=listOf("курьер","архивист","бывший следователь","подросток","ночной сторож").random(r)
@@ -207,7 +228,9 @@ class ChallengeActivity:AppCompatActivity(){
    ChallengeMode.DUEL->1.85
   }
   val difficultyMultiplier=when(config.idleSeconds){3->1.35;4->1.20;5->1.10;else->1.0}
-  val payout=Store.rewardSuccess(this,score,wc,bonusXp=if(config.mode!=ChallengeMode.STANDARD)25 else 0,modeMultiplier=modeMultiplier,difficultyMultiplier=difficultyMultiplier)
+  val entryCost=when(config.mode){ChallengeMode.STANDARD->0;ChallengeMode.GENRE->300;ChallengeMode.RARE_GENRE->700;ChallengeMode.HYBRID->1200;ChallengeMode.STORY->1500;ChallengeMode.CURSED->2000;ChallengeMode.BOSS->3000;ChallengeMode.DUEL->2200}
+  val actualEntryCost=if(config.daily)Store.challengeCost(this,700) else Store.challengeCost(this,entryCost)
+  val payout=Store.rewardSuccess(this,score,wc,entryCost=actualEntryCost,bonusXp=if(config.mode!=ChallengeMode.STANDARD)25 else 0,modeMultiplier=modeMultiplier,difficultyMultiplier=difficultyMultiplier)
   if(config.idleSeconds<=4)Store.unlock(this,"Без паузы")
   if(config.blind)Store.unlock(this,"Слепой режим")
   if(config.chaos)Store.unlock(this,"Хаос")
@@ -231,7 +254,7 @@ class ChallengeActivity:AppCompatActivity(){
  }
  private fun showAnalysis(d:Draft,score:Int,wc:Int,payout:Int){
   val sentences=d.text.split(Regex("[.!?]+")).map{it.trim()}.filter{it.isNotBlank()};val chars=d.text.count{it.isLetter()};val avg=if(wc==0)0.0 else chars.toDouble()/wc;val longest=sentences.maxByOrNull{it.length}?.length?:0
-  val message="Счёт: ${score}\nСлов: ${wc}\nПредложений: ${sentences.size}\nСредняя длина слова: ${String.format(java.util.Locale.US,"%.1f",avg)}\nСамое длинное предложение: ${longest} символов\n\nXP и чернила начислены.\nСерия: ${Store.streak(this)} • Уровень: ${Store.level(this)} • Чернила: ${Store.ink(this)}"
+  val message="Счёт: ${score}\nСлов: ${wc}\nПредложений: ${sentences.size}\nСредняя длина слова: ${String.format(java.util.Locale.US,"%.1f",avg)}\nСамое длинное предложение: ${longest} символов\n\nXP и чернила начислены.\nОплата слов: ${wc} 🖋 • Награда: +${payout} 🖋\nСерия: ${Store.streak(this)} • Уровень: ${Store.level(this)} • Чернила: ${Store.ink(this)}"
   val e=EditText(this);e.hint="Название текста"
   AlertDialog.Builder(this).setTitle("Текст завершён").setMessage(message).setView(e).setPositiveButton("В библиотеку"){_,_->d.title=if(e.text.isBlank())"Текст "+java.text.SimpleDateFormat("dd.MM.yyyy",java.util.Locale.getDefault()).format(java.util.Date())else e.text.toString();Store.saveDraft(this,d);finish()}.setNeutralButton("Сохранить без названия"){_,_->Store.saveDraft(this,d);finish()}.show()
  }
