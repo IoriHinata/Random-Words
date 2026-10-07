@@ -28,6 +28,8 @@ class ChallengeActivity:AppCompatActivity(){
  private var blindHidden=false
  private var lastSentenceWord=""
  private var currentGenre:Genre?=null
+ private var chargedWordCount=0
+ private var lastPaidWordCount=0
 
  override fun onCreate(b:Bundle?){super.onCreate(b);setup();if(intent.getBooleanExtra("daily",false)){root.post{config=ChallengeConfig(3,GoalType.WORDS,100,5,false,false,true,false,true,false,true,ChallengeMode.STANDARD);startChallenge()}}else if(intent.getBooleanExtra("boss",false)){root.post{config=ChallengeConfig(5,GoalType.WORDS,200,4,false,false,true,false,false,false,true,ChallengeMode.BOSS);startChallenge()}}}
 
@@ -38,14 +40,14 @@ class ChallengeActivity:AppCompatActivity(){
   label("РЕЖИМ")
   val mode=Spinner(this)
   mode.adapter=ArrayAdapter(this,android.R.layout.simple_spinner_dropdown_item,arrayOf(
-   "Основное — бесплатно","Случайный жанр — 3 чернила","Непопулярный жанр — 4 чернила","Гибрид жанров — 6 чернил",
-   "Сюжетный режим — 5 чернил","Проклятое слово — 4 чернила","Босс недели — 7 чернил","Дуэль с рекордом — 5 чернил"))
+   "Основное — бесплатно","Случайный жанр — 250 чернил","Непопулярный жанр — 500 чернил","Гибрид жанров — 800 чернил",
+   "Сюжетный режим — 5 чернил","Проклятое слово — 900 чернила","Босс недели — 7 чернил","Дуэль с рекордом — 5 чернил"))
   root.addView(mode,lp(54))
   val modeInfo=TextView(this).apply{Ui.text(this,13,Ui.MUTED);setPadding(4,4,4,12)}
   root.addView(modeInfo,LinearLayout.LayoutParams(-1,-2))
   fun updateModeInfo(){
    val pos=mode.selectedItemPosition
-   val base=when(pos){1->3;2->4;3->6;4->5;5->4;6->7;7->5;else->0}
+   val base=when(pos){1->250;2->500;3->800;4->650;5->900;6->1500;7->1200;else->0}
    modeInfo.text=if(base==0)"Бесплатно • серия не расходуется." else "Цена: ${Store.challengeCost(this,base)} чернил • у тебя ${Store.ink(this)} • серия ${Store.streak(this)} снижает цену."
   }
   mode.onItemSelectedListener=object:AdapterView.OnItemSelectedListener{
@@ -86,7 +88,7 @@ class ChallengeActivity:AppCompatActivity(){
  }
 
  private fun startChallenge(){
-  root.removeAllViews();seconds=0;shield=false;blindHidden=false;lastSentenceWord=""
+  root.removeAllViews();seconds=0;shield=false;blindHidden=false;lastSentenceWord="";chargedWordCount=0;lastPaidWordCount=0
   val seed=when{config.daily->dateSeed();config.mode==ChallengeMode.BOSS->dateSeed()/7;else->System.currentTimeMillis().toInt()}
   val rnd=Random(seed)
   currentGenre=when(config.mode){ChallengeMode.GENRE,ChallengeMode.RARE_GENRE,ChallengeMode.HYBRID->GenreBank.random(config.mode,seed);else->null}
@@ -114,7 +116,25 @@ class ChallengeActivity:AppCompatActivity(){
   root.addView(Button(this).apply{text="СОХРАНИТЬ ТЕКСТ";setOnClickListener{finishSuccess()}},lp(58))
   editor.addTextChangedListener(object:android.text.TextWatcher{
    override fun beforeTextChanged(s:CharSequence?,st:Int,c:Int,a:Int){}
-   override fun onTextChanged(s:CharSequence?,st:Int,b:Int,c:Int){if(reset)return;armIdle();updateInfo();renderWords();if(goalReached())finishSuccess()}
+   override fun onTextChanged(s:CharSequence?,st:Int,b:Int,c:Int){
+    if(reset)return
+    val current=countWords(s?.toString().orEmpty())
+    if(current>lastPaidWordCount){
+     val delta=current-lastPaidWordCount
+     if(!Store.payForWrittenWords(this@ChallengeActivity,delta)){
+      reset=true
+      val kept=s?.toString().orEmpty().trim().split(Regex("\\s+")).dropLast(delta.coerceAtMost(current)).joinToString(" ")
+      editor.setText(if(kept=="")"" else kept)
+      reset=false
+      lastPaidWordCount=countWords(kept)
+      Toast.makeText(this@ChallengeActivity,"Не хватает чернил. Каждое написанное слово стоит 1 🖋.",Toast.LENGTH_LONG).show()
+      return
+     }
+     chargedWordCount+=delta
+    }
+    lastPaidWordCount=current
+    armIdle();updateInfo();renderWords();if(goalReached())finishSuccess()
+   }
    override fun afterTextChanged(s:android.text.Editable?){}
   })
   editor.requestFocus();armIdle();startGoalTimer()
@@ -143,7 +163,21 @@ class ChallengeActivity:AppCompatActivity(){
  }
  private fun updateInfo(){if(!::editor.isInitialized||!::info.isInitialized)return;val currentText=editor.text?.toString().orEmpty();val wc=countWords(currentText);val used=words.count{containsWord(currentText,it.replace(" ★",""))};val goal=if(config.goalType==GoalType.TIME)"Время: "+format(config.goal-seconds)else if(config.goalType==GoalType.WORDS)"Цель: "+config.goal else "Без цели";info.text="Слов: ${wc} • Ключевых слов: ${used}/${words.size} • ${goal} • Чернила: ${Store.ink(this)}"}
  private fun armIdle(){h.removeCallbacksAndMessages(null);h.postDelayed({if(editor.text?.isNotBlank() == true)timeout()},config.idleSeconds*1000L)}
- private fun timeout(){Store.breakStreak(this);val saved=editor.text?.toString().orEmpty();reset=true;editor.setText("");reset=false;timer?.cancel();AlertDialog.Builder(this).setTitle("Пауза поймала тебя").setMessage("Тишина превысила ${config.idleSeconds} секунд. Текст удалён. Серия сброшена.").setNegativeButton("Новые слова"){_,_->startChallenge()}.setPositiveButton("Последний шанс"){_,_->shield=true;editor.setText(saved);editor.setSelection(editor.text?.length ?: 0);armIdle()}.show()}
+ private fun timeout(){failRun("Пауза превысила ${config.idleSeconds} секунд. Написанные слова сгорели.")}
+
+ private fun failRun(reason:String){
+  val lost=countWords(editor.text?.toString().orEmpty())
+  val penalty=Store.failurePenalty(this,lost)
+  Store.breakStreak(this)
+  timer?.cancel();h.removeCallbacksAndMessages(null)
+  val saved=editor.text?.toString().orEmpty()
+  reset=true;editor.setText("");reset=false
+  AlertDialog.Builder(this).setTitle("Провал")
+   .setMessage(reason + "\n\nНаписано: " + lost + " слов\nДополнительная потеря: " + penalty + " 🖋\nКаждое слово уже было оплачено при наборе — теперь его стоимость списана ещё раз.")
+   .setNegativeButton("Новые слова"){_,_->startChallenge()}
+   .setPositiveButton("Последний шанс"){_,_->shield=true;reset=true;editor.setText(saved);reset=false;lastPaidWordCount=lost;armIdle()}
+   .show()
+ }
  private fun startGoalTimer(){timer?.cancel();timer=object:CountDownTimer(if(config.goalType==GoalType.TIME)config.goal*1000L else 24*60*60*1000L,1000){override fun onTick(ms:Long){seconds++;if(config.chaos&&seconds%45==0)addChaosWord();updateInfo()};override fun onFinish(){if(config.goalType==GoalType.TIME)finishSuccess()}}.start()}
  private fun addChaosWord(){val extra=Store.words(this).filterNot{words.contains(it)}.shuffled().firstOrNull()?:return;words.add(extra);renderWords();Toast.makeText(this,"ХАОС: добавлено слово «${extra}»",Toast.LENGTH_SHORT).show()}
  private fun goalReached():Boolean{
@@ -162,8 +196,18 @@ class ChallengeActivity:AppCompatActivity(){
   val wc=countWords(text);val base=wc+cleanWords.size*10+(if(config.boss)25 else 0)+(if(config.mode==ChallengeMode.RARE_GENRE)20 else 0)+(if(config.mode==ChallengeMode.HYBRID)30 else 0)
   val difficulty=when(config.idleSeconds){3->2.0;4->1.5;5->1.25;else->1.0};val combo=1.0+minOf(1.0,Store.streak(this)*0.1);val score=max(1,(base*difficulty*combo).toInt())
   if(config.duel&&score<=Store.best(this)){AlertDialog.Builder(this).setTitle("Рекорд устоял").setMessage("Счёт: ${score}\nЛучший: ${Store.best(this)}").setPositiveButton("Ещё раз"){_,_->startChallenge()}.setNegativeButton("В меню"){_,_->finish()}.show();return}
-  val bonusInk=when(config.mode){ChallengeMode.RARE_GENRE->2;ChallengeMode.HYBRID->3;ChallengeMode.BOSS->3;else->0}
-  Store.rewardSuccess(this,score,wc,bonusXp=if(config.mode!=ChallengeMode.STANDARD)25 else 0,bonusInk=bonusInk)
+  val modeMultiplier=when(config.mode){
+   ChallengeMode.STANDARD->1.25
+   ChallengeMode.GENRE->1.35
+   ChallengeMode.STORY->1.40
+   ChallengeMode.CURSED->1.50
+   ChallengeMode.RARE_GENRE->1.60
+   ChallengeMode.HYBRID->1.75
+   ChallengeMode.BOSS->2.00
+   ChallengeMode.DUEL->1.85
+  }
+  val difficultyMultiplier=when(config.idleSeconds){3->1.35;4->1.20;5->1.10;else->1.0}
+  val payout=Store.rewardSuccess(this,score,wc,bonusXp=if(config.mode!=ChallengeMode.STANDARD)25 else 0,modeMultiplier=modeMultiplier,difficultyMultiplier=difficultyMultiplier)
   if(config.idleSeconds<=4)Store.unlock(this,"Без паузы")
   if(config.blind)Store.unlock(this,"Слепой режим")
   if(config.chaos)Store.unlock(this,"Хаос")
@@ -176,7 +220,7 @@ class ChallengeActivity:AppCompatActivity(){
   if(config.lastSentence)Store.unlock(this,"Финальный удар")
   if(config.daily)Store.unlock(this,"Ежедневный вызов")
   val d=Draft(System.currentTimeMillis(),"Без названия",text,cleanWords,System.currentTimeMillis(),seconds,score)
-  showAnalysis(d,score,wc)
+  showAnalysis(d,score,wc,payout)
  }
  private fun showWordExplanation(anchor:android.view.View,word:String){
   val definition=WordBank.explanation(word) ?: return
@@ -185,7 +229,7 @@ class ChallengeActivity:AppCompatActivity(){
   box.addView(TextView(this).apply{text=definition;Ui.text(this,14,Ui.TEXT);setPadding(0,Ui.dp(context,6),0,0)})
   PopupWindow(box,Ui.dp(this,310),-2,true).apply{elevation=12f;setBackgroundDrawable(android.graphics.drawable.ColorDrawable(Color.TRANSPARENT));isOutsideTouchable=true}.also{it.showAsDropDown(anchor,0,-Ui.dp(this,8))}
  }
- private fun showAnalysis(d:Draft,score:Int,wc:Int){
+ private fun showAnalysis(d:Draft,score:Int,wc:Int,payout:Int){
   val sentences=d.text.split(Regex("[.!?]+")).map{it.trim()}.filter{it.isNotBlank()};val chars=d.text.count{it.isLetter()};val avg=if(wc==0)0.0 else chars.toDouble()/wc;val longest=sentences.maxByOrNull{it.length}?.length?:0
   val message="Счёт: ${score}\nСлов: ${wc}\nПредложений: ${sentences.size}\nСредняя длина слова: ${String.format(java.util.Locale.US,"%.1f",avg)}\nСамое длинное предложение: ${longest} символов\n\nXP и чернила начислены.\nСерия: ${Store.streak(this)} • Уровень: ${Store.level(this)} • Чернила: ${Store.ink(this)}"
   val e=EditText(this);e.hint="Название текста"
