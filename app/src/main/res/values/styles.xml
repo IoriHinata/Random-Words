@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.RandomWords" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:statusBarColor">#101116</item>
+        <item name="android:navigationBarColor">#101116</item>
+        <item name="colorPrimary">#C7A46A</item>
+        <item name="colorSecondary">#8FA7C7</item>
+        <item name="android:windowBackground">#101116</item>
+    </style>
+</resources>
