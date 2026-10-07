@@ -1,5 +1,6 @@
 package ru.randomwords
 
+import android.content.Intent
 import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Bundle
@@ -254,7 +255,7 @@ class ChallengeActivity:AppCompatActivity(){
  }
  private fun showAnalysis(d:Draft,score:Int,wc:Int,payout:Int){
   val sentences=d.text.split(Regex("[.!?]+")).map{it.trim()}.filter{it.isNotBlank()};val chars=d.text.count{it.isLetter()};val avg=if(wc==0)0.0 else chars.toDouble()/wc;val longest=sentences.maxByOrNull{it.length}?.length?:0
-  val message="Счёт: ${score}\nСлов: ${wc}\nПредложений: ${sentences.size}\nСредняя длина слова: ${String.format(java.util.Locale.US,"%.1f",avg)}\nСамое длинное предложение: ${longest} символов\n\nXP и чернила начислены.\nОплата слов: ${wc} 🖋 • Награда: +${payout} 🖋\nСерия: ${Store.streak(this)} • Уровень: ${Store.level(this)} • Чернила: ${Store.ink(this)}"
+  val message="Счёт: ${score}\nСлов: ${wc}\nОплата слов: ${wc} 🖋\nНаграда: +${payout} 🖋\nПредложений: ${sentences.size}\nСредняя длина слова: ${String.format(java.util.Locale.US,"%.1f",avg)}\nСамое длинное предложение: ${longest} символов\n\nXP и чернила начислены.\nОплата слов: ${wc} 🖋 • Награда: +${payout} 🖋\nСерия: ${Store.streak(this)} • Уровень: ${Store.level(this)} • Чернила: ${Store.ink(this)}"
   val e=EditText(this);e.hint="Название текста"
   AlertDialog.Builder(this).setTitle("Текст завершён").setMessage(message).setView(e).setPositiveButton("В библиотеку"){_,_->d.title=if(e.text.isBlank())"Текст "+java.text.SimpleDateFormat("dd.MM.yyyy",java.util.Locale.getDefault()).format(java.util.Date())else e.text.toString();Store.saveDraft(this,d);finish()}.setNeutralButton("Сохранить без названия"){_,_->Store.saveDraft(this,d);finish()}.show()
  }
