@@ -7,18 +7,14 @@ import com.google.android.ump.ConsentRequestParameters
 import com.google.android.ump.UserMessagingPlatform
 
 object Ads {
-    // Google demo banner ID. Replace with your own AdMob banner ID before production.
-    const val TEST_BANNER_ID = "ca-app-pub-3940256099942544/6300978111"
-
+    const val TEST_BANNER_ID = "ca-app-pub-3940256099942544/9214589741"
     private var initialized = false
 
     fun requestConsentAndInitialize(activity: Activity, onReady: () -> Unit) {
         val consentInformation = UserMessagingPlatform.getConsentInformation(activity)
         val params = ConsentRequestParameters.Builder().build()
-
         consentInformation.requestConsentInfoUpdate(
-            activity,
-            params,
+            activity, params,
             {
                 UserMessagingPlatform.loadAndShowConsentFormIfRequired(activity) {
                     initializeIfAllowed(activity, consentInformation, onReady)
@@ -30,20 +26,11 @@ object Ads {
         )
     }
 
-    private fun initializeIfAllowed(
-        activity: Activity,
-        consentInformation: ConsentInformation,
-        onReady: () -> Unit
-    ) {
+    private fun initializeIfAllowed(activity: Activity, consentInformation: ConsentInformation, onReady: () -> Unit) {
         if (!consentInformation.canRequestAds()) return
-        if (initialized) {
-            onReady()
-            return
-        }
+        if (initialized) { onReady(); return }
         initialized = true
-        MobileAds.initialize(activity) {
-            activity.runOnUiThread { onReady() }
-        }
+        MobileAds.initialize(activity) { activity.runOnUiThread { onReady() } }
     }
 
     fun showPrivacyOptions(activity: Activity) {
