@@ -4,7 +4,7 @@ import android.os.Bundle
 import android.graphics.Color
 import android.view.Gravity
 import android.widget.*
-import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatActivity\nimport androidx.appcompat.app.AlertDialog
 class MainActivity:AppCompatActivity(){
  private lateinit var root:LinearLayout
  override fun onCreate(b:Bundle?){super.onCreate(b);render()}
