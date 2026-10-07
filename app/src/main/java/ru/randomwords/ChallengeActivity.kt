@@ -31,7 +31,7 @@ class ChallengeActivity:AppCompatActivity(){
   info=TextView(this).apply{gravity=Gravity.CENTER;Ui.text(this,13,Ui.MUTED)};root.addView(info,lp(42))
   editor=EditText(this).apply{hint="Начни писать здесь…";gravity=Gravity.TOP;setTextColor(Color.parseColor(Ui.TEXT));setHintTextColor(Color.parseColor(Ui.MUTED));textSize=18f;setPadding(18,18,18,18);background=Ui.bg("#171920",20f);minHeight=360};root.addView(editor,LinearLayout.LayoutParams(-1,0,1f))
   root.addView(Button(this).apply{text="СОХРАНИТЬ ТЕКСТ";setOnClickListener{finishSuccess()}},lp(58))
-  editor.addTextChangedListener(object:android.text.TextWatcher{override fun beforeTextChanged(s:CharSequence?,st:Int,c:Int,a:Int){};override fun onTextChanged(s:CharSequence?,st:Int,b:Int,c:Int){if(reset)return;armIdle();updateInfo();if(goalReached()){} };override fun afterTextChanged(s:android.text.Editable?){}})
+  editor.addTextChangedListener(object:android.text.TextWatcher{override fun beforeTextChanged(s:CharSequence?,st:Int,c:Int,a:Int){};override fun onTextChanged(s:CharSequence?,st:Int,b:Int,c:Int){if(reset)return;armIdle();updateInfo();if(goalReached())finishSuccess() };override fun afterTextChanged(s:android.text.Editable?){}})
   editor.requestFocus();armIdle();startGoalTimer();if(config.blind)h.postDelayed({if(!isFinishing&&!editor.text.isBlank()){blindHidden=true;wordsBox.text="•••  СЛОВА СКРЫТЫ  •••"}},5000)
  }
  private fun revealWords(){if(!config.blind||!blindHidden)return;wordsBox.text=words.joinToString("   ·   ");h.postDelayed({if(!isFinishing){blindHidden=true;wordsBox.text="•••  СЛОВА СКРЫТЫ  •••"}},2000)}
