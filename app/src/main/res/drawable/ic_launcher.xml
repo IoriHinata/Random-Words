@@ -1,12 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
-    <path android:fillColor="#101217" android:pathData="M54,4A50,50 0,1 0,54 104A50,50 0,1 0,54 4"/>
-    <path android:fillColor="#F3EBDD" android:pathData="M27,28L53,20L81,31L81,78L54,87L27,77Z"/>
-    <path android:fillColor="#D6C5A5" android:pathData="M53,20L54,87L81,78L81,31Z"/>
-    <path android:fillColor="#8B96AA" android:pathData="M34,39L48,35L48,40L34,44Z"/>
-    <path android:fillColor="#8B96AA" android:pathData="M34,49L48,45L48,50L34,54Z"/>
-    <path android:fillColor="#8B96AA" android:pathData="M34,59L45,56L45,61L34,64Z"/>
-    <path android:fillColor="#D2AD70" android:pathData="M61,39L72,50L49,73L39,76L42,66Z"/>
-    <path android:fillColor="#F4EEE4" android:pathData="M58,42L63,37L75,49L70,54Z"/>
-    <path android:fillColor="#D2AD70" android:pathData="M76,19L78,24L83,26L78,28L76,34L74,28L69,26L74,24Z"/>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path android:fillColor="#0B0D12" android:pathData="M54,3A51,51 0,1 0,54 105A51,51 0,1 0,54 3" />
+    <path android:fillColor="#F4EEE4" android:pathData="M29,25L55,17L82,28L82,78L55,91L29,78Z" />
+    <path android:fillColor="#D7C39C" android:pathData="M55,17L55,91L82,78L82,28Z" />
+    <path android:fillColor="#1A1D27" android:pathData="M35,39L49,35L49,40L35,44Z" />
+    <path android:fillColor="#1A1D27" android:pathData="M35,49L49,45L49,50L35,54Z" />
+    <path android:fillColor="#1A1D27" android:pathData="M35,59L46,56L46,61L35,64Z" />
+    <path android:fillColor="#D2AD70" android:pathData="M60,40L68,48L48,68L38,72L41,62Z" />
+    <path android:fillColor="#F8F3E9" android:pathData="M57,43L62,38L73,49L68,54Z" />
+    <path android:fillColor="#D2AD70" android:pathData="M78,18L80,23L85,25L80,27L78,33L76,27L71,25L76,23Z" />
 </vector>
